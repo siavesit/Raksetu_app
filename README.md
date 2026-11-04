@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # React + Vite
 
 <!-- This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
@@ -34,3 +35,6 @@ React + Vite + Tailwind CSS, Redux Toolkit, Context API, Node.js + Express, Mong
 - Frontend: http://localhost:5173, API: http://localhost:5001 (needs a `backend/.env`, see `.env.example`).
 
 ## Run locally
+=======
+# Raksetu_app
+>>>>>>> fc26e4c261b318ba4978ae4fbc0606799eeded6e
