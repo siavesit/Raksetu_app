@@ -4,34 +4,43 @@ const requestSchema = new mongoose.Schema(
   {
     hospitalName: {
       type: String,
-      required: true
+      required: true,
+      trim: true,
     },
     bloodGroup: {
       type: String,
       required: true,
-      enum: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]
+      enum: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
     },
     unitsNeeded: {
       type: Number,
-      required: true
+      required: true,
+      min: 1,
+      max: 20,
     },
     urgency: {
       type: String,
       enum: ["Low", "Medium", "High", "Critical"],
-      default: "Medium"
+      default: "Medium",
     },
     location: {
       type: String,
-      required: true
+      required: true,
+      trim: true,
     },
     status: {
       type: String,
       enum: ["open", "fulfilled"],
-      default: "open"
-    }
+      default: "open",
+    },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
   },
   {
-    timestamps: true
+    timestamps: true,
   }
 );
 

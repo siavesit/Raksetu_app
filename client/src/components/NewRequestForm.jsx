@@ -1,72 +1,137 @@
 import { useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { addRequest } from '../redux/requestsSlice'
+import useAuth from '../hooks/useAuth'
 
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
 const URGENCY_LEVELS = ['Low', 'Medium', 'High', 'Critical']
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001'
+
 export default function NewRequestForm() {
   const dispatch = useDispatch()
-  const [hospital, setHospital] = useState('')
+  const { token } = useAuth()
+
+  const [hospitalName, setHospitalName] = useState('')
   const [bloodGroup, setBloodGroup] = useState('O+')
-  const [units, setUnits] = useState(1)
+  const [unitsNeeded, setUnitsNeeded] = useState(1)
   const [urgency, setUrgency] = useState('Medium')
+  const [location, setLocation] = useState('')
+  const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!hospital.trim()) return
+    setError('')
+    setSubmitting(true)
 
-    dispatch(
-      addRequest({
-        id: Date.now(),
-        hospital: hospital.trim(),
-        bloodGroup,
-        units: Number(units),
-        urgency,
-        responded: false,
+    try {
+      const response = await fetch(`${API_URL}/api/requests`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          hospitalName: hospitalName.trim(),
+          bloodGroup,
+          unitsNeeded: Number(unitsNeeded),
+          urgency,
+          location: location.trim(),
+        }),
       })
-    )
-    setHospital('')
-    setUnits(1)
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Could not create request')
+      }
+
+      dispatch(addRequest(result.data))
+
+      setHospitalName('')
+      setBloodGroup('O+')
+      setUnitsNeeded(1)
+      setUrgency('Medium')
+      setLocation('')
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
-  const fieldClass = 'border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500'
+  const fieldClass =
+    'border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-500'
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-white rounded-xl shadow p-6 mb-8 grid grid-cols-1 sm:grid-cols-5 gap-3"
+      className="bg-white rounded-xl shadow p-6 mb-8 grid grid-cols-1 sm:grid-cols-2 gap-4"
     >
       <input
         type="text"
-        placeholder="Hospital name"
-        value={hospital}
-        onChange={(e) => setHospital(e.target.value)}
-        className={`sm:col-span-2 ${fieldClass}`}
+        placeholder="Hospital / Patient name"
+        value={hospitalName}
+        onChange={(e) => setHospitalName(e.target.value)}
+        className={fieldClass}
+        maxLength={100}
+        required
       />
-      <select value={bloodGroup} onChange={(e) => setBloodGroup(e.target.value)} className={fieldClass}>
-        {BLOOD_GROUPS.map((g) => (
-          <option key={g} value={g}>{g}</option>
+
+      <input
+        type="text"
+        placeholder="Location"
+        value={location}
+        onChange={(e) => setLocation(e.target.value)}
+        className={fieldClass}
+        required
+      />
+
+      <select
+        value={bloodGroup}
+        onChange={(e) => setBloodGroup(e.target.value)}
+        className={fieldClass}
+      >
+        {BLOOD_GROUPS.map((group) => (
+          <option key={group} value={group}>
+            {group}
+          </option>
         ))}
       </select>
+
       <input
         type="number"
         min="1"
         max="20"
-        value={units}
-        onChange={(e) => setUnits(e.target.value)}
+        value={unitsNeeded}
+        onChange={(e) => setUnitsNeeded(e.target.value)}
         className={fieldClass}
+        required
       />
-      <select value={urgency} onChange={(e) => setUrgency(e.target.value)} className={fieldClass}>
-        {URGENCY_LEVELS.map((u) => (
-          <option key={u} value={u}>{u}</option>
+
+      <select
+        value={urgency}
+        onChange={(e) => setUrgency(e.target.value)}
+        className={fieldClass}
+      >
+        {URGENCY_LEVELS.map((level) => (
+          <option key={level} value={level}>
+            {level}
+          </option>
         ))}
       </select>
+
+      {error && (
+        <p className="sm:col-span-2 text-red-600 text-sm">{error}</p>
+      )}
+
       <button
         type="submit"
-        className="sm:col-span-5 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg font-semibold"
+        disabled={submitting}
+        className="sm:col-span-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white py-3 rounded-lg font-semibold"
       >
-        Add Request
+        {submitting ? 'Submitting...' : 'Submit Blood Request'}
       </button>
     </form>
   )

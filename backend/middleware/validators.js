@@ -98,9 +98,9 @@ const validateRegister = [
     .bail()
     .isLength({ min: 8, max: 64 }).withMessage("Password must be 8 to 64 characters")
     .matches(/\d/).withMessage("Password must contain at least one number"),
-  body("role")
-    .optional()
-    .isIn(["Donor", "Requester"]).withMessage("Role must be Donor or Requester"),
+    body("role")
+  .isIn(["Donor", "Requester", "Hospital"])
+  .withMessage("Role must be Donor, Requester or Hospital"),
   handleValidationErrors,
 ];
 

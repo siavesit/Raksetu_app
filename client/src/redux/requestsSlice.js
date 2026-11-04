@@ -1,9 +1,12 @@
 import { createSlice } from '@reduxjs/toolkit'
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001'
+
 const initialState = {
   items: [],
   loading: false,
   loaded: false,
+  error: null,
 }
 
 const requestsSlice = createSlice({
@@ -12,43 +15,53 @@ const requestsSlice = createSlice({
   reducers: {
     fetchStart(state) {
       state.loading = true
+      state.error = null
     },
     fetchSuccess(state, action) {
       state.items = action.payload
       state.loading = false
       state.loaded = true
     },
+    fetchFailure(state, action) {
+      state.loading = false
+      state.error = action.payload
+    },
     addRequest(state, action) {
       state.items.unshift(action.payload)
     },
-    removeRequest(state, action) {
-      state.items = state.items.filter((r) => r.id !== action.payload)
-    },
     respondToRequest(state, action) {
-      const request = state.items.find((r) => r.id === action.payload)
+      const request = state.items.find(
+        (r) => (r._id || r.id) === action.payload
+      )
       if (request) request.responded = true
     },
   },
 })
 
-export const { fetchStart, fetchSuccess, addRequest, removeRequest, respondToRequest } =
-  requestsSlice.actions
+export const {
+  fetchStart,
+  fetchSuccess,
+  fetchFailure,
+  addRequest,
+  respondToRequest,
+} = requestsSlice.actions
 
-const MOCK_REQUESTS = [
-  { id: 1, bloodGroup: 'O+', hospital: 'City Care Hospital', units: 2, urgency: 'High', responded: false },
-  { id: 2, bloodGroup: 'B-', hospital: 'Sunrise Medical Center', units: 1, urgency: 'Critical', responded: false },
-  { id: 3, bloodGroup: 'A+', hospital: 'Lifeline Clinic', units: 3, urgency: 'Medium', responded: false },
-]
-
-// Loads the starting data once, no matter how many times it is called
 export function loadRequests() {
-  return (dispatch, getState) => {
-    const { loaded, loading } = getState().requests
-    if (loaded || loading) return
+  return async (dispatch, getState) => {
+    if (getState().requests.loading || getState().requests.loaded) return
+
     dispatch(fetchStart())
-    setTimeout(() => {
-      dispatch(fetchSuccess(MOCK_REQUESTS))
-    }, 800)
+
+    try {
+      const response = await fetch(`${API_URL}/api/requests`)
+      const result = await response.json()
+
+      if (!response.ok) throw new Error(result.message || 'Failed to load requests')
+
+      dispatch(fetchSuccess(result.data))
+    } catch (error) {
+      dispatch(fetchFailure(error.message))
+    }
   }
 }
 
